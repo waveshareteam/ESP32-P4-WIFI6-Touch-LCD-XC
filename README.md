@@ -24,7 +24,7 @@ We welcome contributions! Here’s how you can help:
 
 If you encounter any issues:
 
-- Check the [Issues](./issues) section.
+- Check the [Issues](../../issues) section.
 - Create a new issue with detailed information.
 - Refer to the documentation for troubleshooting tips.
 - Contact the Waveshare team and provide the order number to obtain technical support.

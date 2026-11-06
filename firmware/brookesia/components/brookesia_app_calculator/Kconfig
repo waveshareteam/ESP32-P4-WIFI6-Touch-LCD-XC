@@ -1,0 +1,13 @@
+menu "Calculator Application"
+
+    config BROOKESIA_APP_CALCULATOR_ROUND_DISPLAY
+        bool "Lay out the Calculator for a round display"
+        default y
+        help
+            Enable on boards with a circular panel, such as the XC 3.4C
+            (800x800) and 4C (720x720). The display and the round keys are
+            then sized to stay inside the visible circle. Only applies when
+            the panel is square; disable on rectangular panels to keep the
+            plain rectangular layout.
+
+endmenu

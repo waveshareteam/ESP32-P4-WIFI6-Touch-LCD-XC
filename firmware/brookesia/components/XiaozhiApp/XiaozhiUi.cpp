@@ -9,13 +9,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bsp/esp-bsp.h"
-#include "bsp_board_extra.h"
+#include "board.h"
 #include "cbin_font.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "font_awesome.h"
 #include "font_emoji.h"
+#include "sdkconfig.h"
 
 LV_FONT_DECLARE(font_puhui_basic_30_4);
 LV_FONT_DECLARE(font_awesome_30_4);
@@ -26,11 +26,27 @@ namespace {
 
 constexpr char TAG[] = "XiaozhiUi";
 constexpr char COMMON_FONT_PATH[] =
-    BSP_SPIFFS_MOUNT_POINT "/xiaozhi/font.bin";
+    BOARD_SPIFFS_MOUNT_POINT "/xiaozhi/font.bin";
 constexpr size_t MAX_COMMON_FONT_SIZE = 4 * 1024 * 1024;
 constexpr int TOP_BAR_HEIGHT = 54;
 constexpr int SUBTITLE_SINGLE_HEIGHT = 62;
 constexpr int SUBTITLE_MULTILINE_HEIGHT = 132;
+constexpr int EMOJI_BOX_SIZE = 96;
+constexpr int EMOJI_CENTER_OFFSET_Y = -18;
+constexpr int SUBTITLE_EMOJI_GAP = 12;
+constexpr int ACTIVATION_BOX_HEIGHT = 250;
+constexpr int ACTIVATION_BOX_OFFSET_Y = -18;
+
+#if CONFIG_XIAOZHI_APP_ROUND_DISPLAY
+constexpr bool ROUND_DISPLAY = true;
+#else
+constexpr bool ROUND_DISPLAY = false;
+#endif
+// Round layout: distance kept from the visible edge, and the status bar's top as a
+// percentage of the panel height, where the circle is wide enough for icon and text.
+constexpr int ROUND_EDGE_MARGIN = 24;
+constexpr int ROUND_TOP_BAR_Y_PERCENT = 9;
+constexpr int NETWORK_ICON_GAP = 12;
 
 struct EmotionGlyph {
     const char *name;
@@ -68,6 +84,8 @@ void prepareTransparentObject(lv_obj_t *object)
     lv_obj_set_style_border_width(object, 0, LV_PART_MAIN);
     lv_obj_set_style_pad_all(object, 0, LV_PART_MAIN);
     lv_obj_clear_flag(object, LV_OBJ_FLAG_SCROLLABLE);
+    // Only the explicit tap targets below are clickable.
+    lv_obj_clear_flag(object, LV_OBJ_FLAG_CLICKABLE);
 }
 
 void setLabelTextIfChanged(lv_obj_t *label, const char *text)
@@ -95,6 +113,38 @@ void setHidden(lv_obj_t *object, bool hidden)
     }
 }
 
+/*
+ * Radius of the round panel. The core may shrink the display resolution to the app's
+ * visual area, so the panel is the larger of that resolution and the screen's far edge.
+ * Returns false on rectangular panels or when the round layout is disabled.
+ */
+bool getRoundPanelRadius(lv_obj_t *object, int32_t &radius)
+{
+    if (!ROUND_DISPLAY) {
+        return false;
+    }
+    lv_display_t *display = lv_obj_get_display(object);
+    lv_obj_t *screen = lv_obj_get_screen(object);
+    lv_obj_update_layout(screen);
+    lv_area_t screen_area;
+    lv_obj_get_coords(screen, &screen_area);
+    const int32_t hor = LV_MAX(lv_display_get_horizontal_resolution(display), screen_area.x2 + 1);
+    const int32_t ver = LV_MAX(lv_display_get_vertical_resolution(display), screen_area.y2 + 1);
+    if (hor != ver || hor <= 0) {
+        return false;
+    }
+    radius = hor / 2;
+    return true;
+}
+
+// Width that stays ROUND_EDGE_MARGIN inside the circle for the band [top, bottom] (screen y).
+int32_t roundBandWidth(int32_t radius, int32_t top, int32_t bottom)
+{
+    const int32_t dy = LV_MIN(LV_MAX(LV_ABS(top - radius), LV_ABS(bottom - radius)), radius);
+    const int32_t half = lv_sqrt32(static_cast<uint32_t>(radius * radius - dy * dy));
+    return LV_MAX(static_cast<int32_t>(1), 2 * (half - ROUND_EDGE_MARGIN));
+}
+
 } // namespace
 
 XiaozhiUi::~XiaozhiUi()
@@ -114,9 +164,9 @@ bool XiaozhiUi::preload()
         (void)loadTextFont();
     }
     if (!_emoji_font) {
-        if (bsp_extra_display_lock(-1)) {
+        if (board_display_lock(-1)) {
             _emoji_font = font_emoji_64_init();
-            bsp_extra_display_unlock();
+            board_display_unlock();
         } else {
             ESP_LOGW(TAG, "Unable to lock LVGL while loading the emoji font");
         }
@@ -136,8 +186,8 @@ bool XiaozhiUi::create(
     }
 
     destroyView();
-    (void)action_callback;
-    (void)action_context;
+    _action_callback = action_callback;
+    _action_context = action_context;
     _text_font = _cbin_font ? _cbin_font : &font_puhui_basic_30_4;
 
     _root = lv_obj_create(parent);
@@ -170,8 +220,8 @@ bool XiaozhiUi::create(
 
     _emoji_box = lv_obj_create(_root);
     prepareTransparentObject(_emoji_box);
-    lv_obj_set_size(_emoji_box, 96, 96);
-    lv_obj_align(_emoji_box, LV_ALIGN_CENTER, 0, -18);
+    lv_obj_set_size(_emoji_box, EMOJI_BOX_SIZE, EMOJI_BOX_SIZE);
+    lv_obj_align(_emoji_box, LV_ALIGN_CENTER, 0, EMOJI_CENTER_OFFSET_Y);
 
     _emoji_label = lv_label_create(_emoji_box);
     lv_obj_set_style_text_color(_emoji_label, lv_color_hex(0x000000), LV_PART_MAIN);
@@ -179,7 +229,7 @@ bool XiaozhiUi::create(
 
     _activation_box = lv_obj_create(_root);
     prepareTransparentObject(_activation_box);
-    lv_obj_set_size(_activation_box, lv_pct(88), 250);
+    lv_obj_set_size(_activation_box, lv_pct(88), ACTIVATION_BOX_HEIGHT);
     lv_obj_set_flex_flow(_activation_box, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(
         _activation_box,
@@ -188,7 +238,7 @@ bool XiaozhiUi::create(
         LV_FLEX_ALIGN_CENTER
     );
     lv_obj_set_style_pad_row(_activation_box, 18, LV_PART_MAIN);
-    lv_obj_align(_activation_box, LV_ALIGN_CENTER, 0, -18);
+    lv_obj_align(_activation_box, LV_ALIGN_CENTER, 0, ACTIVATION_BOX_OFFSET_Y);
     lv_obj_add_flag(_activation_box, LV_OBJ_FLAG_HIDDEN);
 
     _activation_code_label = lv_label_create(_activation_box);
@@ -208,14 +258,27 @@ bool XiaozhiUi::create(
         LV_PART_MAIN
     );
 
+    // The emoji, or the activation code shown in its place, is the tap target.
+    if (_action_callback) {
+        lv_obj_t *tap_targets[] = {_emoji_box, _activation_box};
+        for (lv_obj_t *target : tap_targets) {
+            lv_obj_add_flag(target, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(target, tapCallback, LV_EVENT_CLICKED, this);
+        }
+    }
+
+    // The reply text sits directly below the emoji.
+    const int subtitle_height =
+        multiline_subtitle ? SUBTITLE_MULTILINE_HEIGHT : SUBTITLE_SINGLE_HEIGHT;
     _subtitle_bar = lv_obj_create(_root);
     prepareTransparentObject(_subtitle_bar);
-    lv_obj_set_size(
+    lv_obj_set_size(_subtitle_bar, lv_pct(100), subtitle_height);
+    lv_obj_align(
         _subtitle_bar,
-        lv_pct(100),
-        multiline_subtitle ? SUBTITLE_MULTILINE_HEIGHT : SUBTITLE_SINGLE_HEIGHT
+        LV_ALIGN_CENTER,
+        0,
+        EMOJI_CENTER_OFFSET_Y + EMOJI_BOX_SIZE / 2 + SUBTITLE_EMOJI_GAP + subtitle_height / 2
     );
-    lv_obj_align(_subtitle_bar, LV_ALIGN_BOTTOM_MID, 0, 0);
     lv_obj_set_style_bg_color(_subtitle_bar, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(_subtitle_bar, LV_OPA_70, LV_PART_MAIN);
     lv_obj_set_style_pad_hor(_subtitle_bar, 16, LV_PART_MAIN);
@@ -234,11 +297,56 @@ bool XiaozhiUi::create(
     lv_obj_set_style_text_font(_subtitle_label, _text_font, LV_PART_MAIN);
     lv_obj_align(_subtitle_label, LV_ALIGN_CENTER, 0, 0);
 
+    applyRoundLayout(subtitle_height);
+
     setNetworkReady(false);
     setStatus("");
     setEmotion("neutral");
     clearChatMessages();
     return true;
+}
+
+void XiaozhiUi::applyRoundLayout(int subtitle_height)
+{
+    int32_t radius = 0;
+    if (!getRoundPanelRadius(_root, radius)) {
+        return;
+    }
+    lv_obj_update_layout(_root);
+    lv_area_t root_area;
+    lv_obj_get_coords(_root, &root_area);
+    const int32_t root_center_y = (root_area.y1 + root_area.y2) / 2;
+
+    // Status bar: move it down to where the circle fits the network icon and the status text,
+    // with the icon at the left end and the text centred between equal side gaps.
+    const int32_t bar_top = 2 * radius * ROUND_TOP_BAR_Y_PERCENT / 100;
+    const int32_t bar_width = roundBandWidth(radius, bar_top, bar_top + TOP_BAR_HEIGHT);
+    lv_obj_set_width(_top_bar, bar_width);
+    lv_obj_align(_top_bar, LV_ALIGN_TOP_MID, 0, bar_top - root_area.y1);
+    lv_obj_align(_network_label, LV_ALIGN_LEFT_MID, 0, 0);
+    // The icon text is set later, so reserve its width from the icon font.
+    const int32_t icon_width = lv_font_get_line_height(&font_awesome_30_4) * 4 / 3;
+    lv_obj_set_width(
+        _status_label,
+        LV_MAX(static_cast<int32_t>(1), bar_width - 2 * (icon_width + NETWORK_ICON_GAP))
+    );
+    lv_obj_align(_status_label, LV_ALIGN_CENTER, 0, 0);
+
+    // Subtitle and activation areas are centred horizontally; narrow them to their band.
+    const int32_t subtitle_top =
+        root_center_y + EMOJI_CENTER_OFFSET_Y + EMOJI_BOX_SIZE / 2 + SUBTITLE_EMOJI_GAP;
+    lv_obj_set_width(
+        _subtitle_bar, roundBandWidth(radius, subtitle_top, subtitle_top + subtitle_height)
+    );
+
+    const int32_t activation_top =
+        root_center_y + ACTIVATION_BOX_OFFSET_Y - ACTIVATION_BOX_HEIGHT / 2;
+    lv_obj_set_width(
+        _activation_box,
+        // The box starts hidden, so take its 88% width from the root instead of reading it back.
+        LV_MIN(lv_area_get_width(&root_area) * 88 / 100,
+               roundBandWidth(radius, activation_top, activation_top + ACTIVATION_BOX_HEIGHT))
+    );
 }
 
 void XiaozhiUi::destroy()
@@ -397,13 +505,13 @@ bool XiaozhiUi::loadTextFont()
         return false;
     }
 
-    if (!bsp_extra_display_lock(-1)) {
+    if (!board_display_lock(-1)) {
         ESP_LOGW(TAG, "Unable to lock LVGL while decoding the common font");
         heap_caps_free(data);
         return false;
     }
     lv_font_t *font = cbin_font_create(data);
-    bsp_extra_display_unlock();
+    board_display_unlock();
 
     if (!font) {
         ESP_LOGW(TAG, "Common font could not be decoded");
@@ -420,18 +528,26 @@ bool XiaozhiUi::loadTextFont()
 
 void XiaozhiUi::releaseTextFont()
 {
-    if (_cbin_font && !bsp_extra_display_lock(-1)) {
+    if (_cbin_font && !board_display_lock(-1)) {
         ESP_LOGE(TAG, "Unable to lock LVGL while releasing the common font");
         return;
     }
     if (_cbin_font) {
         cbin_font_delete(_cbin_font);
         _cbin_font = nullptr;
-        bsp_extra_display_unlock();
+        board_display_unlock();
     }
     if (_font_data) {
         heap_caps_free(_font_data);
         _font_data = nullptr;
+    }
+}
+
+void XiaozhiUi::tapCallback(lv_event_t *event)
+{
+    auto *ui = static_cast<XiaozhiUi *>(lv_event_get_user_data(event));
+    if (ui && ui->_action_callback) {
+        ui->_action_callback(ui->_action_context);
     }
 }
 

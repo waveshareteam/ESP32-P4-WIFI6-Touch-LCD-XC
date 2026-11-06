@@ -410,33 +410,24 @@ def arduino_matrix(sketches: list[str]) -> dict[str, list[dict[str, str]]]:
 
 
 def firmware_matrix(selected: bool) -> dict[str, list[dict[str, str]]]:
-    """Build the maintained rev3.x firmware once for each supported XC panel."""
+    """Build both XC panels with the default and pre-v3 silicon profiles."""
     if not selected:
         return {"include": []}
     return {"include": [
         {
             "project": FIRMWARE_PROJECT,
             "project_name": "brookesia",
-            "profile_id": DEFAULT_PROFILE_ID,
+            "profile_id": profile,
             "variant": variant["screen"],
             "variant_id": variant["variant_id"],
             "resolution": variant["resolution"],
-            "build_dir": f"build-{variant['variant_id']}-{DEFAULT_PROFILE_ID}",
-            "sdkconfig": f"sdkconfig.ci.generated-{variant['variant_id']}-{DEFAULT_PROFILE_ID}",
-            "sdkconfig_defaults": (
-                "sdkconfig.defaults;"
-                f"sdkconfig.defaults.{DEFAULT_PROFILE_ID};"
-                f"sdkconfig.defaults.{variant['variant_id']}"
-            ),
-            "command": (
-                "bash ../../.github/scripts/build_maintained_firmware.sh "
-                f"{DEFAULT_PROFILE_ID} {variant['variant_id']}"
-            ),
-            "artifact_key": (
-                f"xc-{variant['variant_id']}-maintained-firmware-"
-                f"{DEFAULT_PROFILE_ID}-brookesia-default"
-            ),
+            "build_dir": f"build-{variant['variant_id']}-{profile}",
+            "sdkconfig": f"sdkconfig.ci.generated-{variant['variant_id']}-{profile}",
+            "sdkconfig_defaults": "sdkconfig.defaults" + (";sdkconfig.defaults.rev1_3" if profile == "rev1_3" else ""),
+            "command": f"bash ../../.github/scripts/build_maintained_firmware.sh {profile} {variant['variant_id']}",
+            "artifact_key": f"xc-{variant['variant_id']}-maintained-firmware-{profile}-brookesia-default",
         }
+        for profile in ("rev3_x", "rev1_3")
         for variant in SCREEN_VARIANTS
     ]}
 

@@ -144,15 +144,15 @@ platform guidance.
 | Repository self-check | Documentation, project structure, and first-party sketch layout |
 | ESP-IDF | 12 first-party projects × ESP-IDF `v5.5.5`/`v6.0.2`: 01–06 each build one shared non-display configuration per ESP-IDF line (12 jobs), 07–11 build both 3.4C and 4C displays (20 jobs), and USB builds both displays with default and vendor-only configurations (8 jobs); 40 jobs on a complete route |
 | Arduino | 10 first-party `rev3_x` sketches with Arduino-ESP32 `3.3.11`, compiled for both the 3.4C and 4C displays (20 jobs) |
-| Maintained firmware | Two ESP-IDF `v5.5.5` P4-only, rev3.x artifacts for `firmware/brookesia`: `3_4c` (800 × 800) and `4c` (720 × 720) |
+| Maintained firmware | ESP-IDF `v5.5.5` builds for both panels and `rev3_x` / `rev1_3` profiles |
 
 Every pull request gets visible policy, ESP-IDF-routing, and Arduino-routing
 results. Documentation-only changes skip product build jobs. Source or shared
 build-input changes select the affected matrix, and unknown paths fail policy
 after conservatively selecting both complete matrices. The maintained
 `firmware/` source selects its separate two-display-profile firmware workflow but remains
-outside the default example matrix. A complete configured artifact set has 62 items
-(40 ESP-IDF examples + 20 Arduino examples + 2 maintained firmware). Bundled library examples are excluded from
+outside the default example matrix. A complete configured artifact set has 64 items
+(40 ESP-IDF example jobs + 20 Arduino example jobs + 4 maintained firmware jobs). Bundled library examples are excluded from
 discovery. See [Continuous Integration](docs/CI.md) for exact behavior.
 
 ## 🗂️ Repository Layout

@@ -62,9 +62,7 @@ python .github/scripts/ci_change_router.py --base-ref <base-sha> --head-ref <hea
 | 未分类的非文档路径 | 双完整矩阵并使严格策略失败 |
 
 `firmware/brookesia` 是单独维护的交付/源码面，不会被当作另一个示例。路由选中时，
-专用工作流会配置为构建两个独立的 ESP-IDF `v5.5.5`、32 MB、rev3.x P4 显示产物：
-`3_4c`（800 × 800）和 `4c`（720 × 720）。它不构建 `rev1_3` 固件镜像。C6 Hosted
-镜像是运行时依赖，不是这些产物内的 C6 二进制文件。
+专用工作流使用 ESP-IDF `v5.5.5` 构建 `3_4c`（800 × 800）和 `4c`（720 × 720），各覆盖 `rev3_x` 与 `rev1_3`。Board Manager 生成板级配置，其中 `3_4c` 使用 `lcd_3_4_dsi_touch_c` amend。C6 Hosted 镜像是运行时依赖，不包含在这些产物中。
 
 ## ESP-IDF 矩阵
 

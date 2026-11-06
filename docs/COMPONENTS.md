@@ -8,7 +8,7 @@ can be removed.
 
 ## Registry-backed board support
 
-Examples 07 through 12 and the maintained firmware use the managed
+Examples 07 through 12 use the managed
 [`waveshare/esp32_p4_wifi6_touch_lcd_xc`](https://components.espressif.com/components/waveshare/esp32_p4_wifi6_touch_lcd_xc)
 BSP pinned exactly to the published `3.0.1` release. No vendored copy of that
 BSP remains in an example; `bsp_extra` and unrelated local components remain
@@ -59,11 +59,7 @@ and this repository also validates ESP-IDF 5.5; see the Component Manager's
 - Example 08 accepts LVGL v9 with `^9.*`; example 12 and the Brookesia surfaces
   use LVGL `9.5.0`. Move these contracts only after compile, UI, display and
   touch regression checks on both display variants.
-- The maintained firmware uses the published XC BSP `3.0.1` and builds only
-  its `3_4c` and `4c` rev3.x display profiles. Before publishing a delivery
-  artifact, record the resolved component versions and validate the matching
-  profile-specific build; do not substitute unpublished, Git, or local-path
-  components in its manifests.
+- The maintained firmware uses `waveshare/waveshare_boards` and `esp_board_manager`. Record resolved versions and validate the selected board configuration before publishing firmware.
 
 ## Product-local or example-local components
 
@@ -75,9 +71,7 @@ and this repository also validates ESP-IDF 5.5; see the Component Manager's
 | `examples/esp-idf/11_esp_brookesia_phone/components/brookesia_app_squareline_demo` | Example application composition |
 | `examples/esp-idf/12_usb_extend_screen/components/bsp_extra` | USB/display example-specific board glue |
 
-The `firmware/brookesia/components/` tree is a separate maintained firmware
-surface. Its BSP consumer is also pinned to `3.0.1`; its `3_4c` and `4c`
-rev3.x display profiles are built separately from the unchanged example matrix.
+The `firmware/brookesia/components/` tree is a separate maintained firmware surface. Its local `board` component wraps Board Manager devices; firmware CI is separate from the example matrix.
 
 When a reusable correction is needed in the shared Waveshare component
 repository, request authorization for that upstream change before publishing a

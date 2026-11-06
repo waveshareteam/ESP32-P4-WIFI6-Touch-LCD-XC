@@ -7,7 +7,7 @@
 
 ## 注册表板级支持
 
-示例 07 至 12 与维护中的固件都使用托管的
+示例 07 至 12 使用托管的
 [`waveshare/esp32_p4_wifi6_touch_lcd_xc`](https://components.espressif.com/components/waveshare/esp32_p4_wifi6_touch_lcd_xc)
 BSP，并精确固定为已发布的 `3.0.1` 版本。示例中不再保留该 BSP 的 vendored 副本；
 `bsp_extra` 和其他无关本地组件仍保持本地边界。组件 manifest 必须使用已发布的注册表
@@ -49,9 +49,7 @@ Component Manager 的
   `rev1_3` 兼容 profile。
 - 示例 08 以 `^9.*` 接受 LVGL v9；示例 12 与 Brookesia 面使用 LVGL
   `9.5.0`。只有两个显示变体都通过编译、UI、显示与触控回归后，才调整这些约定。
-- 维护固件使用已发布的 XC BSP `3.0.1`，并且只构建 `3_4c` 和 `4c` 两个 rev3.x
-  显示 profile。发布任何交付物前，应记录解析后的组件版本并验证对应的 profile
-  构建；其 manifest 不得替换为未发布、Git 或本地路径组件。
+- 维护固件使用 `waveshare/waveshare_boards` 和 `esp_board_manager`。发布固件前，应记录解析后的组件版本并验证所选板级配置。
 
 ## 产品或示例本地组件
 
@@ -63,8 +61,7 @@ Component Manager 的
 | `examples/esp-idf/11_esp_brookesia_phone/components/brookesia_app_squareline_demo` | 示例应用组合逻辑 |
 | `examples/esp-idf/12_usb_extend_screen/components/bsp_extra` | USB/显示示例专用的板级 glue |
 
-`firmware/brookesia/components/` 是单独维护的固件源码面。其 BSP 使用者同样固定为
-`3.0.1`，`3_4c` 和 `4c` 两个 rev3.x 显示 profile 与未改变的示例矩阵分开构建。
+`firmware/brookesia/components/` 是单独维护的固件源码面。本地 `board` 组件封装 Board Manager 设备；固件 CI 与示例矩阵分离。
 
 如果可复用的修复应当进入 Waveshare 共享组件仓库，应先获得上游修改和发布新依赖
 版本的授权。未经原理图和两个显示变体核对，不要静默用共享组件替换本地板级 glue。

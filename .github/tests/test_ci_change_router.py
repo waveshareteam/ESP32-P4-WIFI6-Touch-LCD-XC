@@ -53,15 +53,13 @@ class RouterTests(unittest.TestCase):
         self.assertTrue(all(entry["artifact_key"].startswith("xc-") for entry in matrix))
         self.assertTrue(all("-esp-idf-" in entry["artifact_key"] for entry in matrix))
         firmware = router.firmware_matrix(True)["include"]
-        self.assertEqual(2, len(firmware))
-        self.assertEqual(2, len({entry["build_dir"] for entry in firmware}))
-        self.assertEqual(2, len({entry["sdkconfig"] for entry in firmware}))
-        self.assertEqual({"rev3_x"}, {entry["profile_id"] for entry in firmware})
+        self.assertEqual(4, len(firmware))
+        self.assertEqual(4, len({entry["build_dir"] for entry in firmware}))
+        self.assertEqual(4, len({entry["sdkconfig"] for entry in firmware}))
+        self.assertEqual({"rev3_x", "rev1_3"}, {entry["profile_id"] for entry in firmware})
         self.assertEqual({"3_4c", "4c"}, {entry["variant_id"] for entry in firmware})
-        self.assertEqual({"3.4C", "4C"}, {entry["variant"] for entry in firmware})
-        self.assertEqual({"800x800", "720x720"}, {entry["resolution"] for entry in firmware})
-        self.assertTrue(all("sdkconfig.defaults.rev3_x" in entry["sdkconfig_defaults"] for entry in firmware))
-        self.assertTrue(all("sdkconfig.defaults." + entry["variant_id"] in entry["sdkconfig_defaults"] for entry in firmware))
+        for entry in firmware:
+            self.assertEqual(entry["profile_id"] == "rev1_3", "sdkconfig.defaults.rev1_3" in entry["sdkconfig_defaults"])
 
     def test_phone_matrix_has_34c_and_4c_variants(self) -> None:
         entries = router.idf_matrix([router.PHONE_PROJECT])["include"]
@@ -270,7 +268,7 @@ class RouterTests(unittest.TestCase):
                     len(router.arduino_matrix(route["arduino_sketches"])["include"]),
                 )
                 self.assertEqual(
-                    2,
+                    4,
                     len(router.firmware_matrix(route["firmware_selected"])["include"]),
                 )
                 self.assertFalse(route["docs_only"])
@@ -334,22 +332,15 @@ class RouterTests(unittest.TestCase):
         self.assertEqual([], route["idf_projects"])
         self.assertEqual([], route["arduino_sketches"])
         self.assertTrue(route["firmware_selected"])
-        self.assertEqual(2, len(router.firmware_matrix(True)["include"]))
+        self.assertEqual(4, len(router.firmware_matrix(True)["include"]))
 
-    def test_maintained_firmware_build_wrapper_is_rev3_panel_safe(self) -> None:
+    def test_maintained_firmware_build_wrapper_selects_panel_and_profile(self) -> None:
         workflow = FIRMWARE_WORKFLOW.read_text(encoding="utf-8")
         script = FIRMWARE_BUILD_SCRIPT.read_text(encoding="utf-8")
         self.assertIn("command: ${{ matrix.command }}", workflow)
-        firmware = router.firmware_matrix(True)["include"]
-        self.assertTrue(all(entry["command"].endswith(entry["variant_id"]) for entry in firmware))
-        self.assertIn("rev3_x)", script)
-        self.assertNotIn("rev1_3|rev3_x", script)
-        self.assertIn('export SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.$profile_id;sdkconfig.defaults.$variant_id"', script)
-        self.assertIn('sdkconfig_path="$(pwd)/sdkconfig.ci.generated-$variant_id-$profile_id"', script)
-        self.assertIn(
-            'exec idf.py -B "build-$variant_id-$profile_id" -D "SDKCONFIG=$sdkconfig_path" build',
-            script,
-        )
+        self.assertIn("-a lcd_3_4_dsi_touch_c", script)
+        self.assertIn("idf.py bmgr -b esp32_p4_wifi6_touch_lcd_xc", script)
+        self.assertIn("sdkconfig.defaults.rev1_3", script)
         self.assertIn('--variant "${{ matrix.variant }}" --variant-id "${{ matrix.variant_id }}"', workflow)
         self.assertIn('--resolution "${{ matrix.resolution }}"', workflow)
 

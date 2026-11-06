@@ -15,7 +15,7 @@ CSI、3.4/4 英寸显示屏连接器、Codec/ADC、麦克风、扬声器功放�
 
 | 范围 | 仓库证据 |
 | --- | --- |
-| ESP-IDF 板级支持 | `examples/esp-idf/07_Displaycolorbar/main/idf_component.yml`、`examples/esp-idf/08_lvgl_demo_v9/components/bsp_extra/idf_component.yml` 和 `firmware/brookesia/components/bsp_extra/idf_component.yml` 等依赖 manifest 将托管的 `waveshare/esp32_p4_wifi6_touch_lcd_xc` BSP 固定为 `3.0.1`；其源码由 Component Manager 解析，不在本仓库 vendoring |
+| ESP-IDF 板级支持 | `examples/esp-idf/07_Displaycolorbar/main/idf_component.yml`、`examples/esp-idf/08_lvgl_demo_v9/components/bsp_extra/idf_component.yml` 等依赖 manifest 将托管的 `waveshare/esp32_p4_wifi6_touch_lcd_xc` BSP 固定为 `3.0.1`；维护固件则使用 `waveshare/waveshare_boards` 和 Board Manager |
 | 显示屏变体 | BSP 头文件和 `BSP_LCD_TYPE_800_800_3_4_INCH` / `BSP_LCD_TYPE_720_720_4_INCH` 配置 |
 | Arduino 显示变体 | `examples/arduino/libraries/displays/displays_config.h` 和一方示例中的 `CURRENT_SCREEN` |
 | Arduino I2C/触控 | `examples/arduino/libraries/displays/i2c.h` 和 `gt911.h` |

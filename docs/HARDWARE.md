@@ -16,7 +16,7 @@ The following maintained sources provide the software-side contract:
 
 | Surface | Repository evidence |
 | --- | --- |
-| ESP-IDF board support | Dependency manifests such as `examples/esp-idf/07_Displaycolorbar/main/idf_component.yml`, `examples/esp-idf/08_lvgl_demo_v9/components/bsp_extra/idf_component.yml`, and `firmware/brookesia/components/bsp_extra/idf_component.yml` pin the managed `waveshare/esp32_p4_wifi6_touch_lcd_xc` BSP to `3.0.1`; its source is resolved by the Component Manager, not vendored in this repository |
+| ESP-IDF board support | Dependency manifests such as `examples/esp-idf/07_Displaycolorbar/main/idf_component.yml`, `examples/esp-idf/08_lvgl_demo_v9/components/bsp_extra/idf_component.yml` pin the managed `waveshare/esp32_p4_wifi6_touch_lcd_xc` BSP to `3.0.1`; maintained firmware instead uses `waveshare/waveshare_boards` and Board Manager |
 | Display variants | BSP headers plus `BSP_LCD_TYPE_800_800_3_4_INCH` / `BSP_LCD_TYPE_720_720_4_INCH` configuration |
 | Arduino display variants | `examples/arduino/libraries/displays/displays_config.h` and `CURRENT_SCREEN` in the first-party sketches |
 | Arduino I2C/touch | `examples/arduino/libraries/displays/i2c.h` and `gt911.h` |

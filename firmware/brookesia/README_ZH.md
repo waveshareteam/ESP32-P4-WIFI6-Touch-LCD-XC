@@ -1,45 +1,243 @@
-# ESP32-P4-WIFI6-Touch-LCD-XC ESP-Brookesia 固件
+# ESP-Brookesia 出厂固件
 
-[English](README.md)
+[![ESP-IDF](https://img.shields.io/badge/ESP--IDF-v5.5-E7352C?logo=espressif)](https://github.com/espressif/esp-idf/releases)
+[![Target](https://img.shields.io/badge/target-ESP32--P4-1F6FEB)](https://www.espressif.com/en/products/socs/esp32-p4)
+[![LVGL](https://img.shields.io/badge/LVGL-9.5.0-2AA9E0?logo=lvgl)](https://lvgl.io/)
 
-这是 ESP32-P4-WIFI6-Touch-LCD-3.4C 和 -4C 的默认固件源码。保留 Brookesia 手机桌面及配套应用：ESP-Hosted Wi-Fi、摄像头、音频、音乐、视频、绘图、频谱分析、设置和小智。
+[English](README.md) | 简体中文
 
-## 要求
+本目录是 **Waveshare ESP32-P4-WIFI6-Touch-LCD-XC** 的 ESP-Brookesia 固件源码，
+支持 MIPI-DSI 触摸屏、ES8311 和 ES7210 音频编解码器、OV5647 摄像头、
+SD 卡和 ESP32-C6 Hosted Wi-Fi。
 
-- ESP-IDF v5.5.5
-- 仅支持 ESP32-P4 Rev3.x
+## 平台配置
 
-## 屏幕变体
+| 项目 | 配置 |
+| --- | --- |
+| 主控 | ESP32-P4 Rev3.x（默认）或 pre-v3，32 MiB Flash，Hex 模式 PSRAM 分别为 250 MHz 或 200 MHz |
+| 显示 / 触摸 | 3.4C 800 x 800 或 4C 720 x 720 MIPI-DSI 屏，GT911 兼容触摸 |
+| 框架 | ESP-IDF v5.5；`main/idf_component.yml` 要求 `>=5.5,<6.0` |
+| UI | LVGL 9.5.0，本地 ESP-Brookesia core 0.6.0-beta2 |
+| 板级支持 | `espressif/esp_board_manager` ^0.7.5、`waveshare/waveshare_boards` ^0.2.0 和本地 [`board`](components/board/) 组件 |
+| LVGL 适配 | `espressif/esp_lvgl_adapter` ^0.7.3~1 |
+| 无线 | ESP32-C6 经 SDIO 连接，使用 ESP-Hosted 1.4.7 / `esp_wifi_remote` 0.14.5 |
+| 语音助手 | `espressif/esp_xiaozhi` 0.1.3~1、ESP-SR 2.4.7、xiaozhi-fonts 1.6.0 |
+| 多媒体 | `espressif/esp_extractor` 1.0.7、`esp_new_jpeg` 1.0.2、`esp_video` ^2.3.0 |
 
-| 变体 | 屏幕 | MIPI-DSI lane 数 | 单 lane 速率 | DPI 时钟 |
-| --- | --- | ---: | ---: | ---: |
-| `3_4c` | 3.4 英寸，800 x 800 | 2 | 1500 Mbps | 80 MHz |
-| `4c` | 4 英寸，720 x 720 | 2 | 1500 Mbps | 80 MHz |
+板级定义 `esp32_p4_wifi6_touch_lcd_xc` 配置显示、触摸、音频、摄像头、SD 卡和背光，本地 `board` 组件提供这些设备和 Wi-Fi 的访问接口。固件与 CI 产物说明见[固件文档](../../docs/FIRMWARE_ZH.md)。
 
-已发布的 XC BSP 使用 `phy_clk_src = 0`。ESP-IDF 会根据芯片最小 revision 选择兼容的 PHY 时钟源，因此本固件在基础 defaults 中直接设为 Rev3.x，不会选择 pre-v3 时钟路径。
+## 应用
 
-## 触摸初始化
+<table>
+  <tr>
+    <td align="center"><img src="components/draw/assets/img_app_drawpanel.png" width="64" alt="DrawPanel 图标"><br><b>DrawPanel</b></td>
+    <td align="center"><img src="components/brookesia_app_squareline_demo/assets/esp_brookesia_app_icon_launcher_squareline_112_112.png" width="64" alt="Squareline 图标"><br><b>Squareline</b></td>
+    <td align="center"><img src="components/brookesia_app_calculator/assets/img_app_calculator.png" width="64" alt="Calculator 图标"><br><b>Calculator</b></td>
+    <td align="center"><img src="components/SpecAnalyzer/assets/img_app_specanalyzer.png" width="64" alt="SpecAnalyzer 图标"><br><b>SpecAnalyzer</b></td>
+    <td align="center"><img src="components/MusicPlayer/assets/img_app_musicplayer.png" width="64" alt="MusicPlayer 图标"><br><b>MusicPlayer</b></td>
+    <td align="center"><img src="components/Camera/assets/img_app_camera.png" width="64" alt="Camera 图标"><br><b>Camera</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="components/VideoPlayer/assets/img_app_vedioplayer.png" width="64" alt="VideoPlayer 图标"><br><b>VideoPlayer</b></td>
+    <td align="center"><img src="components/Settings/assets/img_app_settings.png" width="64" alt="Settings 图标"><br><b>Settings</b></td>
+    <td align="center"><img src="components/XiaozhiApp/assets/img_app_xiaozhi.png" width="64" alt="AIChats 图标"><br><b>AIChats</b></td>
+  </tr>
+</table>
 
-本固件中 GT911 的 INT 和 RST 均为 NC。BSP 依次探测 I2C 地址 `0x5D` 和 `0x14`，
-使用实际探测到的地址创建 panel IO，并通过轮询读取触摸数据。除非另行变更
-硬件约束，否则不要加入依赖 INT/RST 的地址选择时序。
+| 应用 | 功能 | 运行依赖 |
+| --- | --- | --- |
+| DrawPanel | 固定画布区域绘图，在边缘绘画不会拖动整个应用 | 显示与触摸 |
+| Squareline | 从组件仓库安装的 Squareline Studio UI 演示与应用模板 | 显示与触摸 |
+| Calculator | 适合触摸操作的 Brookesia 计算器 | 显示与触摸 |
+| SpecAnalyzer | 板载麦克风的双通道 FFT 频谱 | ES7210 输入 |
+| MusicPlayer | 播放 `/spiffs/music` 中的 MP3，带频谱可视化 | SPIFFS `storage`，ES8311 输出 |
+| Camera | OV5647 MIPI CSI 预览，由 PPA 缩放铺满屏幕 | OV5647，`esp_video` |
+| VideoPlayer | 全屏播放 SD 卡中的 AVI/MJPEG 视频，支持 PCM 音频 | SD 卡，JPEG/PPA，ES8311 输出 |
+| Settings | WLAN 扫描/连接、声音、屏幕亮度、SNTP 时间和设备信息 | ESP32-C6 Hosted Wi-Fi |
+| AIChats | 网络检查、小智激活、WakeNet 唤醒词、AEC/VAD、Opus 上下行、服务端文本和 TTS | Wi-Fi，`model`/`storage` 镜像，ES8311，ES7210 |
 
 ## 编译
 
-在本目录导出 ESP-IDF v5.5.5 环境后，按屏幕选择一条命令：
+### 环境要求
 
-```bash
-idf.py -B build-3_4c-v5.5.5-rev3_x -D SDKCONFIG="$PWD/build-3_4c-v5.5.5-rev3_x/sdkconfig" -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.rev3_x;sdkconfig.defaults.3_4c" build
-idf.py -B build-4c-v5.5.5-rev3_x -D SDKCONFIG="$PWD/build-4c-v5.5.5-rev3_x/sdkconfig" -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.rev3_x;sdkconfig.defaults.4c" build
+使用 ESP-IDF v5.5 和 `esp32p4` 工具链，需要能访问 ESP 组件仓库。`idf.py bmgr`
+命令由 `esp-bmgr-assist` 提供。烧录时请使用支持数据传输的 USB 线。
+
+从仓库根目录进入工程，安装 Board Manager 辅助工具并解析工程依赖：
+
+```sh
+cd firmware/brookesia
+python -m pip install esp-bmgr-assist==0.8.3
+idf.py set-target esp32p4
+idf.py reconfigure
 ```
 
-应用二进制命名为 `esp32-p4-lcd-xc-brookesia.bin`。
+选择屏幕并生成对应板级配置。**4C（720 x 720）**使用基础配置：
 
-## 合并出厂固件
-
-编译成功后运行对应命令。每条命令会生成一份 16 MiB 合并镜像，可从偏移 `0x0` 开始烧录：
-
-```bash
-(cd build-3_4c-v5.5.5-rev3_x && python -m esptool --chip esp32p4 merge_bin -o ../../ESP32-P4-WIFI6-Touch-LCD-3.4C-FactoryOnly-260821.bin @flash_args)
-(cd build-4c-v5.5.5-rev3_x && python -m esptool --chip esp32p4 merge_bin -o ../../ESP32-P4-WIFI6-Touch-LCD-4C-FactoryOnly-260821.bin @flash_args)
+```sh
+idf.py bmgr -b esp32_p4_wifi6_touch_lcd_xc
 ```
+
+**3.4C（800 x 800）**使用 `waveshare/waveshare_boards` 提供的 amend：
+
+```sh
+idf.py bmgr -b esp32_p4_wifi6_touch_lcd_xc -a lcd_3_4_dsi_touch_c
+```
+
+切换屏幕时需要重新生成板级配置。上述命令会在本地生成 `components/gen_bmgr_codes/`。
+
+基础 `sdkconfig.defaults` 选择 Rev3.x 和 250 MHz PSRAM。首次使用默认配置编译：
+
+```sh
+idf.py build
+```
+
+对于 pre-v3 芯片，在基础配置之后加载 `sdkconfig.defaults.rev1_3`，并使用独立配置与构建目录。以下为 POSIX shell 示例：
+
+```sh
+idf.py -B build-rev1_3 -D "SDKCONFIG=$PWD/sdkconfig.rev1_3" -D "SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.defaults.rev1_3" build
+```
+
+切换芯片 profile 时请使用新的 `sdkconfig`：已有生成配置可能保留之前的选项。pre-v3 覆盖配置选择最低版本 1.0 和 200 MHz PSRAM。`build/`、`managed_components/`、`dependencies.lock` 和 `sdkconfig` 都在本地生成。CI 为两个屏幕分别构建两个芯片 profile，见 [CI 文档](../../docs/CI_ZH.md)。
+
+生成 `sdkconfig` 时，Board Manager 的配置优先级高于 `sdkconfig.defaults`。板级定义选择的是传感器
+默认 IPA 文件，其中没有 AWB 模块，所以构建前请在 `idf.py menuconfig` 中将 OV5647 的自定义 IPA 文件
+设为 `components/Camera/config/ov5647_ipa.json`。重新生成 `sdkconfig` 后需要再次设置。
+
+### 首次完整烧录与分区变更
+
+首次安装必须写入 bootloader、分区表、应用、ESP-SR 模型和 SPIFFS 资源：
+
+```sh
+idf.py -p PORT flash monitor
+```
+
+修改分区偏移或大小、从旧分区布局升级、或排查模型/文件系统镜像残留时，
+先擦除 Flash 再完整烧录：
+
+```sh
+idf.py -p PORT erase-flash flash monitor
+```
+
+分区布局、语音模型和 `spiffs/` 资源都没有变化时，可以只烧录应用：
+
+```sh
+idf.py -p PORT app-flash monitor
+```
+
+`app-flash` 不会更新 `srmodels.bin`、`storage.bin` 和分区表。修改
+`partitions.csv`、WakeNet/模型 Kconfig、xiaozhi-fonts、内置音乐或提示音后，
+需要执行完整 `flash`。
+
+### Flash 分区
+
+分区布局定义在 `partitions.csv`，分区表位于 `0x9000`：
+
+| 名称 | 类型 | 偏移 | 大小 | 用途 |
+| --- | --- | --- | --- | --- |
+| `nvsfactory` | data / nvs | `0xA000` | 200 KiB | 出厂 NVS 数据 |
+| `nvs` | data / nvs | `0x3C000` | 840 KiB | Wi-Fi、应用设置和小智状态 |
+| `otadata` | data / ota | `0x10E000` | 8 KiB | OTA 数据（预留） |
+| `phy_init` | data / phy | `0x110000` | 4 KiB | PHY 校准数据 |
+| `model` | data / spiffs | `0x111000` | 956 KiB | ESP-SR 语音模型（`srmodels.bin`） |
+| `factory` | app / factory | `0x200000` | 8 MiB | 应用程序 |
+| `storage` | data / spiffs | `0xA00000` | 6 MiB | 音乐、小智提示音和字体（`storage.bin`） |
+
+### 单独擦除 NVS
+
+如需清除 Wi-Fi、应用设置和小智状态而不重新烧录固件，请在已激活的 ESP-IDF 环境中运行
+以下命令。PowerShell 中请将 `$IDF_PATH` 换成 `$env:IDF_PATH`：
+
+```sh
+python $IDF_PATH/components/partition_table/parttool.py --port PORT --partition-table-offset 0x9000 erase_partition --partition-name=nvs
+```
+
+擦除后复位开发板，并在 Settings 中重新配置 WLAN。`idf.py flash` 不会写入 `nvs`
+分区，因此不会清除这些数据。
+
+## AIChats / 小智
+
+AIChats 使用 `esp_xiaozhi` 处理协议，本工程负责 UI、激活、音频和生命周期集成。
+
+首次使用：
+
+1. 在 Settings 中配置 WLAN。
+2. 打开 AIChats。如果设备尚未绑定账号，会显示并播报激活码。
+3. 在[小智控制台](https://xiaozhi.me)添加设备并输入激活码。
+4. 页面进入待机后说出唤醒词，默认是“你好小智”。
+
+如果日志出现 `Speech model partition 'model' is missing` 或
+`Speech model image is empty or unreadable`，请重新编译并完整烧录，以写入分区表和
+`srmodels.bin`。
+
+本地 UI 语言和传输方式可在以下菜单中选择，`sdkconfig.defaults` 默认选择 English 和 Auto：
+
+```text
+idf.py menuconfig
+  Xiaozhi Application
+    Local UI language            English / Simplified Chinese
+    Preferred Xiaozhi transport  WebSocket / Auto / MQTT+UDP
+```
+
+语言选项只影响固件自带的文本，不会翻译服务端返回的对话文本、TTS 或激活消息。
+本地字符串位于 `components/XiaozhiApp/XiaozhiLocalization.*`。
+
+开发板使用 ES8311 输出音频，使用 ES7210 采集音频。AIChats 将 MIC1、MIC2 和回声参考
+以 `MMR` 布局、16 kHz 送入 AFE 并启用 AEC，再编码为 16 kHz 单声道 Opus 上行。
+服务端音频按 24 kHz 解码后输出。
+
+## 摄像头与多媒体
+
+Camera 使用 OV5647 的 800 x 800 模式。可选 IPA 配置见[摄像头配置](components/Camera/config/README_ZH.md)。
+
+VideoPlayer 只扫描 `/sdcard/avi`，`.avi` 扩展名不区分大小写。SD 卡根目录下的
+AVI 以及 MP4、MOV 等其他容器不会被列出。播放器使用 `esp_extractor` 解封装 AVI，
+用硬件 JPEG 解码器解码 MJPEG（硬件无法解码的帧，例如渐进式 JPEG，回退到
+`esp_new_jpeg`），再经 PPA 直接写入 LCD 帧缓冲：
+
+- 视频只支持 MJPEG，音频只支持 PCM；其他音频格式会被跳过，视频静音播放。
+- 画面跟随 UI 旋转方向，并居中裁剪以铺满屏幕；可见区域取决于屏幕分辨率和视频宽高比。
+
+其他视频可用 ffmpeg 转换，例如：
+
+```sh
+ffmpeg -i input.mov -c:v mjpeg -q:v 5 -pix_fmt yuvj420p -r 24 -c:a pcm_s16le -ar 44100 -ac 2 output.avi
+```
+
+如果播放丢帧，可以调大 `-q:v`（降低画质）或缩小视频分辨率。
+
+MusicPlayer 播放 `/spiffs/music` 中的 MP3。更换曲目后需要重新生成并烧录
+`storage.bin`，仅 `app-flash` 不会更新它。
+
+## 开发说明
+
+- 应用通过 `ESP_UTILS_REGISTER_PLUGIN_WITH_CONSTRUCTOR` 自行注册。
+  `main/main.cpp` 中的 `BOOT_APP_GROUPS` 只决定主屏顺序以及各组安装时显示的启动阶段；
+  已注册但未列出的应用会在最后一组之后安装。
+- 新应用继承 `esp_brookesia::systems::phone::App` 并实现 `run()` 和 `back()`，
+  其他生命周期函数按资源归属按需重写。每个组件在自己的 `idf_component.yml`
+  中声明依赖，`main` 只保留直接使用的依赖。
+- MCP 工具入口是 `components/XiaozhiApp/XiaozhiDeveloperTools.cpp` 中的
+  `registerXiaozhiDeveloperTools()`。只注册已实现且返回真实结果的工具，
+  耗时操作放在应用任务中执行。
+- 在 LVGL 线程中访问 LVGL 对象，或短暂持有显示锁。应用关闭时释放其定时器、
+  任务、队列、编解码器会话、SD 句柄和 LVGL 对象。
+- 播放期间 VideoPlayer 会启用适配层的 Dummy Draw 并暂停 LVGL，退出时停止播放并恢复
+  LVGL 渲染。
+
+## 注意事项
+
+- LVGL 锁只用于 UI 操作。网络、SD 扫描、音频初始化、NVS 访问和模型加载都应在锁外执行。
+- 修改模型、字体、提示音、音乐或分区后需要完整 `flash`。
+- 音频应用共用同一条物理总线，切换应用时要停止或交接编解码器会话。
+- Host 组件需要与 ESP32-C6 上的协处理器固件保持兼容。`esp_wifi_remote` 和 `esp_hosted`
+  的版本在 `components/board/idf_component.yml` 中声明，升级前请先确认协处理器固件。
+
+`main/main.cpp` 中的 `EXAMPLE_SHOW_MEM_INFO` 当前为 `true`，会周期性统计 SRAM/PSRAM；
+详细日志输出由 `EXAMPLE_SHOW_MEM_INFO_LOG` 单独控制。
+
+反馈问题时，请提供开发板和芯片版本、ESP-IDF 版本、完整复现步骤和日志中第一个实际错误。
+
+本地 Brookesia core 使用 [Apache-2.0 许可证](components/brookesia_core/license.txt)，
+仅适用于该组件。`components/XiaozhiApp/third_party/xiaozhi_esp32/` 中的代码适用该目录下的
+MIT 许可证。

@@ -69,9 +69,7 @@ fallback selects both complete product matrices.
 
 `firmware/brookesia` is a separately maintained delivery/source surface. It is
 not treated as another example. When its route is selected, its dedicated
-workflow is configured to build two independent ESP-IDF `v5.5.5`, 32 MB,
-rev3.x P4 display artifacts: `3_4c` (800 × 800) and `4c` (720 × 720). It does
-not build a `rev1_3` firmware image. The C6 Hosted image is a runtime
+workflow is configured to build both `3_4c` (800 × 800) and `4c` (720 × 720) with ESP-IDF `v5.5.5` for `rev3_x` and `rev1_3`. Board Manager generates the board configuration, using `lcd_3_4_dsi_touch_c` for `3_4c`. The C6 Hosted image is a runtime
 dependency, not a C6 binary in these artifacts.
 
 ## ESP-IDF matrix

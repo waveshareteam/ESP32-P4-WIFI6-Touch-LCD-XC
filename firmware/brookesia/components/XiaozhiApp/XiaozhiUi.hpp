@@ -46,9 +46,14 @@ public:
 
 private:
     bool loadTextFont();
+    void applyRoundLayout(int subtitle_height);
     void destroyView();
     void releaseTextFont();
     static const char *emojiForEmotion(const char *emotion);
+    static void tapCallback(lv_event_t *event);
+
+    ActionCallback _action_callback = nullptr;
+    void *_action_context = nullptr;
 
     lv_obj_t *_root = nullptr;
     lv_obj_t *_top_bar = nullptr;

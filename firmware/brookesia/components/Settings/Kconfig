@@ -1,0 +1,12 @@
+menu "Settings Application"
+
+    config SETTINGS_UI_ROUND_DISPLAY
+        bool "Lay out the Settings UI for a round display"
+        default y
+        help
+            Enable on boards with a circular panel, such as the XC 3.4C
+            (800x800) and 4C (720x720). Headers, buttons and lists are then
+            kept inside the visible circle. Disable on rectangular or square
+            panels to get the plain rectangular layout.
+
+endmenu

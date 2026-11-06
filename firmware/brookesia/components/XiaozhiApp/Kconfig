@@ -33,4 +33,14 @@ menu "Xiaozhi Application"
             bool "MQTT+UDP"
     endchoice
 
+    config XIAOZHI_APP_ROUND_DISPLAY
+        bool "Lay out the Xiaozhi UI for a round display"
+        default y
+        help
+            Enable on boards with a circular panel, such as the XC 3.4C
+            (800x800) and 4C (720x720). The status bar is moved down to where
+            the circle is wide enough, and the status, subtitle and activation
+            areas are narrowed to the visible circle. Only applies when the
+            panel is square.
+
 endmenu

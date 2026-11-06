@@ -82,9 +82,7 @@ REQUIRED_FILES = (
     Path("Flash-CI-Firmware.cmd"),
     Path("scripts/Flash-CI-Firmware.ps1"),
     Path("firmware/brookesia/sdkconfig.defaults"),
-    Path("firmware/brookesia/sdkconfig.defaults.rev3_x"),
-    Path("firmware/brookesia/sdkconfig.defaults.3_4c"),
-    Path("firmware/brookesia/sdkconfig.defaults.4c"),
+    Path("firmware/brookesia/sdkconfig.defaults.rev1_3"),
     Path("CONTRIBUTING.md"),
     Path("CONTRIBUTING_ZH.md"),
     Path("SUPPORT.md"),
@@ -208,7 +206,7 @@ def check_managed_bsp(errors: list[str]) -> None:
     vendored = list(root.glob("*/components/waveshare__esp32_p4_wifi6_touch_lcd_xc"))
     if vendored:
         errors.append("Vendored Waveshare BSP remains: " + ", ".join(path.as_posix() for path in vendored))
-    manifests = [manifest for manifest in [*root.glob("**/idf_component.yml"), Path("firmware/brookesia/components/bsp_extra/idf_component.yml")] if manifest.is_file()]
+    manifests = [manifest for manifest in [*root.glob("**/idf_component.yml")] if manifest.is_file()]
     bsp_manifests = []
     for manifest in manifests:
         if manifest.is_file():
@@ -217,51 +215,21 @@ def check_managed_bsp(errors: list[str]) -> None:
                 bsp_manifests.append(manifest)
             if "waveshare/esp32_p4_wifi6_touch_lcd_xc" in text and not re.search(r"waveshare/esp32_p4_wifi6_touch_lcd_xc:\s*(?:\n\s*version: )?['\"]3\.0\.1['\"]", text):
                 errors.append(f"BSP is not pinned to 3.0.1: {manifest.as_posix()}")
-    if len(bsp_manifests) != 7:
-        errors.append(f"Expected exactly 7 managed BSP manifests, found {len(bsp_manifests)}")
+    if len(bsp_manifests) != 6:
+        errors.append(f"Expected exactly 6 managed BSP manifests, found {len(bsp_manifests)}")
 
 
 def check_firmware_defaults(errors: list[str]) -> None:
-    """Keep the maintained firmware rev3.x-only and panel-explicit."""
+    """Check the default rev3.x profile and the explicit pre-v3 overlay."""
     root = Path("firmware/brookesia")
-    rev3_required = (
-        "CONFIG_ESP32P4_REV_MIN_300=y",
-        "CONFIG_SPIRAM_SPEED_250M=y",
-        "CONFIG_SPIRAM_SPEED=250",
-    )
-    rev3_forbidden = (
-        "CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y",
-        "CONFIG_ESP32P4_REV_MIN_100=y",
-        "CONFIG_SPIRAM_SPEED_200M=y",
-        "CONFIG_SPIRAM_SPEED=200",
-    )
-    for name in ("sdkconfig.defaults", "sdkconfig.defaults.rev3_x"):
-        path = root / name
-        if not path.is_file():
-            continue
-        text = path.read_text(encoding="utf-8")
-        if any(value not in text for value in rev3_required) or any(
-            value in text for value in rev3_forbidden
-        ):
-            errors.append(f"Invalid maintained-firmware rev3_x defaults: {path.as_posix()}")
-
-    panel_expectations = {
-        "sdkconfig.defaults.3_4c": (
-            "CONFIG_BSP_LCD_TYPE_800_800_3_4_INCH=y",
-            "# CONFIG_BSP_LCD_TYPE_720_720_4_INCH is not set",
-        ),
-        "sdkconfig.defaults.4c": (
-            "CONFIG_BSP_LCD_TYPE_720_720_4_INCH=y",
-            "# CONFIG_BSP_LCD_TYPE_800_800_3_4_INCH is not set",
-        ),
-    }
-    for name, expected in panel_expectations.items():
-        path = root / name
-        if not path.is_file():
-            continue
-        text = path.read_text(encoding="utf-8")
-        if any(value not in text for value in expected):
-            errors.append(f"Invalid maintained-firmware panel defaults: {path.as_posix()}")
+    base = root / "sdkconfig.defaults"
+    if base.is_file():
+        text = base.read_text(encoding="utf-8")
+        required = ("CONFIG_ESP32P4_REV_MIN_300=y", "CONFIG_SPIRAM_SPEED_250M=y")
+        forbidden = ("CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y", "CONFIG_ESP32P4_REV_MIN_100=y", "CONFIG_SPIRAM_SPEED_200M=y")
+        if any(value not in text for value in required) or any(value in text for value in forbidden):
+            errors.append(f"Invalid maintained-firmware rev3_x defaults: {base.as_posix()}")
+    check_profile_defaults(root / "sdkconfig.defaults.rev1_3", "rev1_3", errors)
 
 
 def check_example_index(projects: list[Path], errors: list[str]) -> None:

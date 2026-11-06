@@ -6,54 +6,18 @@
 ESP-Brookesia 交付源码工程。它以 LCD-X 固件源码布局为基线并适配 XC 开发板，
 不属于 `examples/` 下的普通示例。
 
-## 支持的构建 profile
+## 配置与构建
 
-固件只面向 ESP32-P4 rev3.x 和 32 MB Flash 构建。两个显示 profile 需要独立构建：
+固件默认面向 ESP32-P4 rev3.x 和 32 MB Flash。对于 pre-v3 芯片，在基础配置之后加载 `sdkconfig.defaults.rev1_3`，选择最低版本 1.0 和 200 MHz PSRAM。修改默认配置后请检查生成的 `sdkconfig`。
 
-| Profile | 显示屏 | 预期 FactoryOnly combine bin 名称 |
-| --- | --- | --- |
-| `3_4c` | 3.4C，800 × 800 | `ESP32-P4-WIFI6-Touch-LCD-3.4C-FactoryOnly-260821.bin` |
-| `4c` | 4C，720 × 720 | `ESP32-P4-WIFI6-Touch-LCD-4C-FactoryOnly-260821.bin` |
+原有的 `sdkconfig.defaults.3_4c` 和 `sdkconfig.defaults.4c` 已删除。当前本地 Board Manager 生成配置使用 720 × 720 屏幕；800 × 800 屏幕使用 Board Manager amend `lcd_3_4_dsi_touch_c`。编译和烧录说明见[固件 README](../firmware/brookesia/README_ZH.md)。
 
-固件没有 `rev1_3` 构建 profile。ESP32-P4 pre-v3 的 DSI PHY 参考源为旧版
-PLL_F20M，rev3.x 为 XTAL。XC 固件及托管 BSP 将 `.phy_clk_src` 保持为 `0`，由
-ESP-IDF 根据实际芯片 profile 自动选择。DPI 像素时钟始终为 80 MHz；两种 XC
-显示屏均使用两条 1,500 Mbps/lane 的 DSI 通道。
+固件使用 `waveshare/waveshare_boards`、`espressif/esp_board_manager` 和本地 `board` 组件。发布镜像前应记录解析后的依赖版本，并验证所选板级配置。
 
-## 编译与合并流程
+## 出厂镜像
 
-按以下顺序使用已检入的默认配置：`sdkconfig.defaults`、
-`sdkconfig.defaults.rev3_x`，以及所选显示文件（`sdkconfig.defaults.3_4c` 或
-`sdkconfig.defaults.4c`）。每个 profile 必须使用独立构建目录；不要在 profile
-之间复用生成的 `sdkconfig`、`managed_components/` 或 `dependencies.lock`。
+当前工作区包含 `ESP32-P4-WIFI6-Touch-LCD-3.4C-FactoryOnly-261106.bin` 和 `ESP32-P4-WIFI6-Touch-LCD-4C-FactoryOnly-261106.bin`；本次改动删除了旧的 `260821` 文件。发布前请确认各镜像的构建来源及对应的实机验证结果。
 
-```bash
-cd firmware/brookesia
-idf.py -B build-3_4c-rev3_x \
-  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.rev3_x;sdkconfig.defaults.3_4c" build
-idf.py -B build-4c-rev3_x \
-  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.defaults.rev3_x;sdkconfig.defaults.4c" build
-```
+## CI 与验证
 
-每个构建成功后，从对应构建目录使用该目录生成的 `flash_args` 运行
-`esptool merge_bin`。上表是所需的 FactoryOnly 命名规范。合并镜像必须来自自身
-成功的 profile 构建，不能复制其他镜像，也不能使用填充后的整片 Flash 镜像。
-
-## 依赖与硬件约定
-
-开发板 BSP 依赖为已发布的注册表组件
-[`waveshare/esp32_p4_wifi6_touch_lcd_xc`](https://components.espressif.com/components/waveshare/esp32_p4_wifi6_touch_lcd_xc)，
-且精确固定为 `3.0.1`。不要在组件 manifest 中改用未发布版本、Git URL 或本地路径，
-因为这些输入不能通过 Component Registry 打包。
-
-GT911 兼容触控有意只使用轮询。软件不配置 INT 和 RST，先探测 `0x5D`、再探测
-`0x14`，并以有响应的地址初始化。不得安装触控 ISR，也不得驱动地址/复位 strap。
-
-## CI 与验证边界
-
-维护固件工作流与默认示例矩阵分离。路由选中固件源码时，预期构建上述两个
-rev3.x 显示 profile；固件源码不会加入正常的 ESP-IDF 或 Arduino 示例发现范围。
-
-本地维护任务只编译源码并准备按 profile 区分的 combine bin 输出，不会烧录开发板，
-也不构成显示、触控、音频、摄像头、Wi-Fi 或其他硬件在环（HIL）验证。只有完成并
-记录对应实机检查后，编译出的镜像才可视为已验证。
+维护固件工作流与示例矩阵分离。CI 为两个屏幕生成板级配置，并构建两个芯片版本配置。构建成功本身不代表硬件功能已验证。

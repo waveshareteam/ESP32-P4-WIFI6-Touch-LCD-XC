@@ -1,4 +1,6 @@
 dependencies:
+  lvgl/lvgl:
+    version: "9.5.0"
   idf: ">=5.3"
 
   esp_video:

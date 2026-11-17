@@ -2,8 +2,6 @@
 
 [English](README.md) | [简体中文](README_ZH.md)
 
-[返回固件列表](../README_ZH.md)
-
 ESP32-P4-WIFI6-Touch-LCD-3.4C 的出厂固件。BIN 是从 `0x0` 烧录的合并镜像，文件名中的日期即版本。
 
 | 文件 | 用途 |

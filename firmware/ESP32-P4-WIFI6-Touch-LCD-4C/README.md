@@ -2,8 +2,6 @@
 
 [English](README.md) | [简体中文](README_ZH.md)
 
-[Back to firmware list](../README.md)
-
 Factory firmware for ESP32-P4-WIFI6-Touch-LCD-4C. The BIN is a merged image flashed at `0x0`; the date in its file name identifies the version.
 
 | File | Purpose |

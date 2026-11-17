@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "products": [
+    {
+      "id": "esp32-p4-wifi6-touch-lcd-3.4c",
+      "model": "ESP32-P4-WIFI6-Touch-LCD-3.4C",
+      "readme": {
+        "en": "firmware/ESP32-P4-WIFI6-Touch-LCD-3.4C/README.md",
+        "zh": "firmware/ESP32-P4-WIFI6-Touch-LCD-3.4C/README_ZH.md"
+      },
+      "files": [
+        "firmware/ESP32-P4-WIFI6-Touch-LCD-3.4C/ESP32-P4-WIFI6-Touch-LCD-3.4C_FactoryOnly_20261106.bin"
+      ]
+    },
+    {
+      "id": "esp32-p4-wifi6-touch-lcd-4c",
+      "model": "ESP32-P4-WIFI6-Touch-LCD-4C",
+      "readme": {
+        "en": "firmware/ESP32-P4-WIFI6-Touch-LCD-4C/README.md",
+        "zh": "firmware/ESP32-P4-WIFI6-Touch-LCD-4C/README_ZH.md"
+      },
+      "files": [
+        "firmware/ESP32-P4-WIFI6-Touch-LCD-4C/ESP32-P4-WIFI6-Touch-LCD-4C_FactoryOnly_20261106.bin"
+      ]
+    }
+  ]
+}
